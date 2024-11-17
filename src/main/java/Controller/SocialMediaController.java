@@ -1,5 +1,12 @@
 package Controller;
 
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import Service.AccountService;
+import Service.MessageService;
+import Model.Account;
+import Model.Message;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
@@ -9,6 +16,13 @@ import io.javalin.http.Context;
  * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
  */
 public class SocialMediaController {
+    MessageService messageService;
+    AccountService accountService;
+    
+    public SocialMediaController(){
+        messageService = new MessageService();
+        accountService = new AccountService();
+    }
     /**
      * In order for the test cases to work, you will need to write the endpoints in the startAPI() method, as the test
      * suite must receive a Javalin object from this method.
@@ -16,8 +30,16 @@ public class SocialMediaController {
      */
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
-
+        //login and register
+        app.post("/register", this::registerHandler);
+        app.post("/login", this::loginHandler);
+        //messages
+        app.post("/messages", this::postMessageHandler);
+        app.get("/messages", this::getAllMessagesHandler);
+        app.get("/messages/{message_id}",this::getMessageByIdHandler);
+        app.delete("/messages/{message_id}", this::deleteMessageById);
+        app.patch("/messages/{message_id}", this::updateMessageById);
+        app.get("/account/{account_id}/messages", this::getMessagesByAccountHandler);       
         return app;
     }
 
@@ -25,8 +47,61 @@ public class SocialMediaController {
      * This is an example handler for an example endpoint.
      * @param context The Javalin Context object manages information about both the HTTP request and response.
      */
-    private void exampleHandler(Context context) {
-        context.json("sample text");
+
+     private void registerHandler(Context ctx){
+        ObjectMapper mapper = new ObjectMapper(); 
+        Account account = mapper.readValue(ctx.body(), Account.class);
+        Account newAccount = accountService.addAccount(account);
+        if(newAccount != null){
+            ctx.json(mapper.writeValueAsString(newAccount));
+        }else{
+            ctx.status(400);
+        }   
+     } 
+    
+    private void loginHandler(Context ctx){
+        ObjectMapper mapper = new ObjectMapper();
+        Account account = mapper.readValue(ctx.body(), Account.class);
+        Account accountLogin = accountService.addAccount(account);
+        if(accountLogin != null){
+            ctx.json(mapper.writeValueAsString(accountLogin));
+        }else{
+            ctx.status(400);
+        }   
+    } 
+
+    private void getAllMessagesHandler(Context context) {
+        List<Message> messages = messageService.getAllMessages();
+        context.json(messages);
+    }
+    private void getMessageByIdHandler(Context ctx){
+
+    }
+    private void postMessageHandler(Context ctx){
+        ObjectMapper mapper = new ObjectMapper();
+        Message message = mapper.readValue(ctx.body(), Message.class);
+        Message addedMessage = messageService.addMessage(message);
+        if(addedMessage!=null){
+            ctx.json(mapper.writeValueAsString(addedMessage));
+        }else{
+            ctx.status(400);
+        }
+    }
+
+    
+
+    private void deleteMessageById(Context ctx){
+
+    }
+
+    private void updateMessageById(Context ctx){
+
+    }
+
+    private void getMessagesByAccountHandler(Context ctx){
+        int accountID = Integer.parseInt(ctx.pathParam("account_id"));
+        List<Message> message = messageService.getMessageById(accountID);
+        ctx.json(message);
     }
 
 
