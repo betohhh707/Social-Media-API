@@ -1,8 +1,10 @@
 package Controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import Service.ServiceException;
 import Service.AccountService;
 import Service.MessageService;
 import Model.Account;
@@ -16,12 +18,12 @@ import io.javalin.http.Context;
  * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
  */
 public class SocialMediaController {
-    MessageService messageService;
-    AccountService accountService;
+    private final MessageService messageService;
+    private final AccountService accountService;
     
     public SocialMediaController(){
-        messageService = new MessageService();
-        accountService = new AccountService();
+        this.messageService = new MessageService();
+        this.accountService = new AccountService();
     }
     /**
      * In order for the test cases to work, you will need to write the endpoints in the startAPI() method, as the test
@@ -39,7 +41,7 @@ public class SocialMediaController {
         app.get("/messages/{message_id}",this::getMessageByIdHandler);
         app.delete("/messages/{message_id}", this::deleteMessageById);
         app.patch("/messages/{message_id}", this::updateMessageById);
-        app.get("/account/{account_id}/messages", this::getMessagesByAccountHandler);       
+        app.get("/accounts/{account_id}/messages", this::getMessagesByAccountHandler);       
         return app;
     }
 
@@ -69,14 +71,6 @@ public class SocialMediaController {
             ctx.status(400);
         }   
     } 
-
-    private void getAllMessagesHandler(Context context) {
-        List<Message> messages = messageService.getAllMessages();
-        context.json(messages);
-    }
-    private void getMessageByIdHandler(Context ctx){
-
-    }
     private void postMessageHandler(Context ctx){
         ObjectMapper mapper = new ObjectMapper();
         Message message = mapper.readValue(ctx.body(), Message.class);
@@ -88,14 +82,42 @@ public class SocialMediaController {
         }
     }
 
-    
+    private void getAllMessagesHandler(Context context) {
+        List<Message> messages = messageService.getAllMessages();
+        context.json(messages);
+    }
+
+    private void getMessageByIdHandler(Context ctx){
+        int id = Integer.parseInt(ctx.pathParam("message_id"));
+        Optional<Message> message = messageService.getMessageById(id);
+        if (message.isPresent()) {
+            ctx.json(message.get());
+        } else {
+            ctx.status(200).result("");
+        }
+    }
+
 
     private void deleteMessageById(Context ctx){
+        int id = Integer.parseInt(ctx.pathParam("message_id")); 
 
+        Optional<Message> message = messageService.getMessageById(id);
+    
+        if (message.isPresent()) {
+            messageService.deleteMessage(message.get());
+            ctx.status(200).json(message.get());
+        } else {
+            ctx.status(200).result(""); 
+        }
     }
 
     private void updateMessageById(Context ctx){
-
+        ObjectMapper mapper = new ObjectMapper();
+        Message mappedMessage = mapper.readValue(ctx.body(), Message.class);
+        int id = Integer.parseInt(ctx.pathParam("message_id"));
+        mappedMessage.setMessage_id(id);
+        Message messageUpdated = messageService.updateMessage(mappedMessage);
+        ctx.json(messageUpdated); 
     }
 
     private void getMessagesByAccountHandler(Context ctx){
