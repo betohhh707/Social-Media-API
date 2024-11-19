@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import Service.ServiceException;
 import Service.AccountService;
 import Service.MessageService;
 import Model.Account;
@@ -125,6 +124,4 @@ public class SocialMediaController {
         List<Message> message = messageService.getMessageById(accountID);
         ctx.json(message);
     }
-
-
 }
